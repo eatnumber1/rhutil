@@ -19,12 +19,13 @@ cc_library(
     hdrs = ["status.h"],
     deps = [
         "@abseil//absl/strings:str_format",
+        "@abseil//absl/strings",
+        "@abseil//absl/base:core_headers",
     ],
 )
 
 cc_test(
     name = "status_test",
-    testonly = 1,
     srcs = ["status_test.cc"],
     deps = [
         ":status",

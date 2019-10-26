@@ -111,4 +111,20 @@ void StatusInternalOnlyDieIfNotOk(const Status &st) {
   std::exit(static_cast<int>(st.code()));
 }
 
+StatusBuilder::StatusBuilder(const Status &original)
+  : status_(original)
+  {}
+
+StatusBuilder::operator Status() const {
+  return status_;
+}
+
+std::ostream &operator<<(std::ostream &os, const StatusBuilder &builder) {
+  return os << static_cast<Status>(builder);
+}
+
+bool StatusBuilder::ok() const {
+  return status_.ok();
+}
+
 }  // namespace rhutil

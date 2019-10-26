@@ -5,8 +5,10 @@
 #include <string_view>
 #include <utility>
 #include <ostream>
+#include <sstream>
 
 #include "absl/base/attributes.h"
+#include "absl/strings/str_cat.h"
 
 #define RETURN_IF_ERROR(expr) \
   if (::rhutil::Status s = (expr); !s.ok()) return s
@@ -96,6 +98,23 @@ class ABSL_MUST_USE_RESULT StatusOr {
   T data_;
 };
 
+class ABSL_MUST_USE_RESULT StatusBuilder {
+ public:
+   StatusBuilder(const Status &original);
+
+   operator Status() const;
+
+   ABSL_MUST_USE_RESULT bool ok() const;
+
+   template <typename T>
+   StatusBuilder &operator<<(const T &value);
+
+ private:
+   Status status_;
+};
+
+std::ostream& operator<<(std::ostream& os, const StatusBuilder &builder);
+
 // implementation details below
 
 void StatusInternalOnlyDieIfNotOk(const Status &);
@@ -135,6 +154,15 @@ const Status &StatusOr<T>::status() const {
 template <typename T>
 bool StatusOr<T>::ok() const {
   return status_.ok();
+}
+
+template <typename T>
+StatusBuilder &StatusBuilder::operator<<(const T &value) {
+  if (status_.ok()) return *this;
+  std::ostringstream strm;
+  strm << value;
+  status_ = Status(status_.code(), absl::StrCat(status_.message(), strm.str()));
+  return *this;
 }
 
 }  // namespace rhutil

@@ -49,5 +49,25 @@ TEST(StatusOrTest, Bad) {
   EXPECT_EQ(int_or.status().ToString(), "UNKNOWN: error");
 }
 
+TEST(StatusBuilderTest, Ok) {
+  StatusBuilder sb(OkStatus());
+  sb << "an error occurred";
+  ASSERT_TRUE(sb.ok());
+
+  Status s(sb);
+  EXPECT_EQ(s.code(), StatusCode::kOk);
+  EXPECT_EQ(s.ToString(), "OK");
+}
+
+TEST(StatusBuilderTest, Bad) {
+  StatusBuilder sb(UnknownError("error"));
+  sb << " an error occurred";
+  ASSERT_FALSE(sb.ok());
+
+  Status s(sb);
+  EXPECT_EQ(s.code(), StatusCode::kUnknown);
+  EXPECT_EQ(s.ToString(), "UNKNOWN: error an error occurred");
+}
+
 }  // namespace
 }  // namespace rhutil
