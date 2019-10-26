@@ -11,7 +11,7 @@
 #include "absl/strings/str_cat.h"
 
 #define RETURN_IF_ERROR(expr) \
-  if (::rhutil::Status s = (expr); !s.ok()) return s
+  if (::rhutil::Status s = (expr); !s.ok()) return ::rhutil::StatusBuilder(s)
 
 #define CHECK_OK(expr) StatusInternalOnlyDieIfNotOk(expr)
 
@@ -71,12 +71,6 @@ class ABSL_MUST_USE_RESULT Status final {
   std::string message_;
 };
 
-Status OkStatus();
-Status UnknownError(std::string_view msg);
-Status InvalidArgumentError(std::string_view msg);
-Status UnimplementedError(std::string_view msg);
-Status InternalError(std::string_view msg);
-
 std::ostream &operator<<(std::ostream &, const Status &);
 
 template <typename T>
@@ -114,6 +108,17 @@ class ABSL_MUST_USE_RESULT StatusBuilder {
 };
 
 std::ostream& operator<<(std::ostream& os, const StatusBuilder &builder);
+
+Status OkStatus();
+Status UnknownError(std::string_view msg);
+Status InvalidArgumentError(std::string_view msg);
+Status UnimplementedError(std::string_view msg);
+Status InternalError(std::string_view msg);
+
+StatusBuilder UnknownErrorBuilder();
+StatusBuilder InvalidArgumentErrorBuilder();
+StatusBuilder UnimplementedErrorBuilder();
+StatusBuilder InternalErrorBuilder();
 
 // implementation details below
 
