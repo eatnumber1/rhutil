@@ -16,3 +16,19 @@ http_archive(
     strip_prefix = "abseil-cpp-20190808",
     urls = ["https://github.com/abseil/abseil-cpp/archive/20190808.zip"],
 )
+
+http_archive(
+    name = "bazel_skylib",
+    type = "tar.gz",
+    url = "https://github.com/bazelbuild/bazel-skylib/releases/download/0.8.0/bazel-skylib.0.8.0.tar.gz",
+    sha256 = "2ef429f5d7ce7111263289644d233707dba35e39696377ebab8b0bc701f7818e",
+)
+
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "b4fdd8e3733cd88dbe71ebbf553d16e536ff0d5eb1fdba689b8fc7821f65878a",
+    strip_prefix = "protobuf-3.9.1",
+    urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v3.9.1/protobuf-cpp-3.9.1.zip"],
+)
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+protobuf_deps()

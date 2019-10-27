@@ -42,3 +42,16 @@ cc_library(
         ":status",
     ],
 )
+
+cc_library(
+    name = "file",
+    visibility = ["//visibility:public"],
+    srcs = ["file.cc"],
+    hdrs = ["file.h"],
+    deps = [
+        ":status",
+        ":errno",
+        "@abseil//absl/strings",
+        "@abseil//absl/strings:str_format",
+    ],
+)

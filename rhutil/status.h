@@ -73,25 +73,6 @@ class ABSL_MUST_USE_RESULT Status final {
 
 std::ostream &operator<<(std::ostream &, const Status &);
 
-template <typename T>
-class ABSL_MUST_USE_RESULT StatusOr {
- public:
-  explicit StatusOr();
-
-  StatusOr(T data);
-  StatusOr(Status);
-
-  const T &ValueOrDie() const &;
-  T &&ValueOrDie() &&;
-
-  const Status &status() const;
-  bool ok() const;
-
- private:
-  Status status_;
-  T data_;
-};
-
 class ABSL_MUST_USE_RESULT StatusBuilder {
  public:
    StatusBuilder(const Status &original);
@@ -105,6 +86,26 @@ class ABSL_MUST_USE_RESULT StatusBuilder {
 
  private:
    Status status_;
+};
+
+template <typename T>
+class ABSL_MUST_USE_RESULT StatusOr {
+ public:
+  explicit StatusOr();
+
+  StatusOr(T data);
+  StatusOr(Status);
+  StatusOr(StatusBuilder builder);
+
+  const T &ValueOrDie() const &;
+  T &&ValueOrDie() &&;
+
+  const Status &status() const;
+  bool ok() const;
+
+ private:
+  Status status_;
+  T data_;
 };
 
 std::ostream& operator<<(std::ostream& os, const StatusBuilder &builder);
@@ -137,6 +138,11 @@ StatusOr<T>::StatusOr(T data)
 template <typename T>
 StatusOr<T>::StatusOr(Status s)
   : status_(std::move(s))
+  {}
+
+template <typename T>
+StatusOr<T>::StatusOr(StatusBuilder builder)
+  : status_(std::move(builder))
   {}
 
 template <typename T>

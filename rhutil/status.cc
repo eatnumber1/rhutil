@@ -88,6 +88,7 @@ std::string Status::ToString() const {
 void Status::IgnoreError() const {}
 
 Status OkStatus() { return {}; }
+
 Status UnknownError(std::string_view msg) {
   return {StatusCode::kUnknown, msg};
 }
@@ -99,6 +100,19 @@ Status UnimplementedError(std::string_view msg) {
 }
 Status InternalError(std::string_view msg) {
   return {StatusCode::kUnimplemented, msg};
+}
+
+StatusBuilder UnknownErrorBuilder() {
+  return {UnknownError("")};
+}
+StatusBuilder InvalidArgumentErrorBuilder() {
+  return {InvalidArgumentError("")};
+}
+StatusBuilder UnimplementedErrorBuilder() {
+  return {UnimplementedError("")};
+}
+StatusBuilder InternalErrorBuilder() {
+  return {InternalError("")};
 }
 
 std::ostream &operator<<(std::ostream &o, const Status &s) {

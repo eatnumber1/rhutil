@@ -13,3 +13,14 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "protobuf_assertions",
+    hdrs = ["protobuf_assertions.h"],
+    srcs = ["protobuf_assertions.cc"],
+    deps = [
+        "@googletest//:gtest",
+        "@com_google_protobuf//:protobuf",
+    ],
+    visibility = ["//visibility:public"],
+)
