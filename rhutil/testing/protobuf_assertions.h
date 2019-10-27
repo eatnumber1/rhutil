@@ -1,5 +1,5 @@
-#ifndef RHUTIL_TESTING_ASSERTIONS_H_
-#define RHUTIL_TESTING_ASSERTIONS_H_
+#ifndef RHUTIL_TESTING_PROTOBUF_ASSERTIONS_H_
+#define RHUTIL_TESTING_PROTOBUF_ASSERTIONS_H_
 
 #include "gtest/gtest.h"
 #include "google/protobuf/util/message_differencer.h"
@@ -12,4 +12,4 @@ testing::AssertionResult IsEqual(const google::protobuf::Message &a,
 
 }  // namespace rhutil
 
-#endif  // RHUTIL_TESTING_ASSERTIONS_H_
+#endif  // RHUTIL_TESTING_PROTOBUF_ASSERTIONS_H_
