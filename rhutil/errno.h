@@ -1,5 +1,5 @@
-#ifndef RHUTIL_UTIL_ERRNO_H_
-#define RHUTIL_UTIL_ERRNO_H_
+#ifndef RHUTIL_ERRNO_H_
+#define RHUTIL_ERRNO_H_
 
 #include "rhutil/status.h"
 
@@ -10,4 +10,4 @@ Status ErrnoAsStatus(int err);
 
 }  // namespace rhutil
 
-#endif  // RHUTIL_UTIL_ERRNO_H_
+#endif  // RHUTIL_ERRNO_H_

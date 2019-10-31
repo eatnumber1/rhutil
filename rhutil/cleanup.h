@@ -1,5 +1,5 @@
-#ifndef CDMANIP_UTIL_CLEANUP_H_
-#define CDMANIP_UTIL_CLEANUP_H_
+#ifndef RHUTIL_CLEANUP_H_
+#define RHUTIL_CLEANUP_H_
 
 #include <functional>
 
@@ -21,4 +21,4 @@ class Cleanup {
 
 }  // namespace cdmanip
 
-#endif  // CDMANIP_UTIL_CLEANUP_H_
+#endif  // RHUTIL_CLEANUP_H_

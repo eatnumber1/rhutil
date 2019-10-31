@@ -1,5 +1,5 @@
-#ifndef RHUTIL_UTIL_STATUS_H_
-#define RHUTIL_UTIL_STATUS_H_
+#ifndef RHUTIL_STATUS_H_
+#define RHUTIL_STATUS_H_
 
 #include <string>
 #include <string_view>
@@ -178,4 +178,4 @@ StatusBuilder &StatusBuilder::operator<<(const T &value) {
 
 }  // namespace rhutil
 
-#endif  // RHUTIL_UTIL_STATUS_H_
+#endif  // RHUTIL_STATUS_H_
