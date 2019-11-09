@@ -3,7 +3,7 @@
 
 #include <functional>
 
-namespace cdmanip {
+namespace rhutil {
 
 class Cleanup {
  public:
@@ -19,6 +19,6 @@ class Cleanup {
   std::function<void()> func_;
 };
 
-}  // namespace cdmanip
+}  // namespace rhutil
 
 #endif  // RHUTIL_CLEANUP_H_

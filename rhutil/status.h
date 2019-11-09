@@ -13,7 +13,10 @@
 #define RETURN_IF_ERROR(expr) \
   if (::rhutil::Status s = (expr); !s.ok()) return ::rhutil::StatusBuilder(s)
 
-#define CHECK_OK(expr) StatusInternalOnlyDieIfNotOk(expr)
+#define CHECK_OK(expr) \
+    if (auto s = (expr); s.ok()) {} else { StatusInternalOnlyDie(s); }
+#define CHECK(expr) \
+    if (expr) {} else { StatusInternalOnlyDie(::rhutil::InternalError(#expr)); }
 
 #define ASSIGN_OR_RETURN(decl, expr) \
   decl = ({ \
@@ -111,19 +114,32 @@ class ABSL_MUST_USE_RESULT StatusOr {
 std::ostream& operator<<(std::ostream& os, const StatusBuilder &builder);
 
 Status OkStatus();
-Status UnknownError(std::string_view msg);
-Status InvalidArgumentError(std::string_view msg);
-Status UnimplementedError(std::string_view msg);
+Status AbortedError(std::string_view msg);
+Status CancelledError(std::string_view msg);
+Status DeadlineExceededError(std::string_view msg);
+Status FailedPreconditionError(std::string_view msg);
 Status InternalError(std::string_view msg);
+Status InvalidArgumentError(std::string_view msg);
+Status NotFoundError(std::string_view msg);
+Status OutOfRangeError(std::string_view msg);
+Status PermissionDeniedError(std::string_view msg);
+Status ResourceExhaustedError(std::string_view msg);
+Status UnauthenticatedError(std::string_view msg);
+Status UnavailableError(std::string_view msg);
+Status UnimplementedError(std::string_view msg);
+Status UnknownError(std::string_view msg);
 
 StatusBuilder UnknownErrorBuilder();
 StatusBuilder InvalidArgumentErrorBuilder();
 StatusBuilder UnimplementedErrorBuilder();
 StatusBuilder InternalErrorBuilder();
+StatusBuilder FailedPreconditionErrorBuilder();
+StatusBuilder NotFoundErrorBuilder();
 
 // implementation details below
 
-void StatusInternalOnlyDieIfNotOk(const Status &);
+[[noreturn]]
+void StatusInternalOnlyDie(const Status &);
 
 template <typename T>
 StatusOr<T>::StatusOr()
@@ -147,13 +163,13 @@ StatusOr<T>::StatusOr(StatusBuilder builder)
 
 template <typename T>
 const T &StatusOr<T>::ValueOrDie() const & {
-  StatusInternalOnlyDieIfNotOk(status_);
+  CHECK_OK(status_);
   return data_;
 }
 
 template <typename T>
 T &&StatusOr<T>::ValueOrDie() && {
-  StatusInternalOnlyDieIfNotOk(status_);
+  CHECK_OK(status_);
   return std::move(data_);
 }
 

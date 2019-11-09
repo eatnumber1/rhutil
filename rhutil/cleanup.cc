@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace cdmanip {
+namespace rhutil {
 
 Cleanup::Cleanup() : released_(true) {};
 
@@ -18,4 +18,4 @@ Cleanup::Cleanup(Cleanup &&o) {
   func_ = std::move(o.func_);
 }
 
-}  // namespace cdmanip
+}  // namespace rhutil

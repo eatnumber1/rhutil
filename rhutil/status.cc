@@ -89,17 +89,47 @@ void Status::IgnoreError() const {}
 
 Status OkStatus() { return {}; }
 
-Status UnknownError(std::string_view msg) {
-  return {StatusCode::kUnknown, msg};
+Status AbortedError(std::string_view msg) {
+  return {StatusCode::kAborted, msg};
+}
+Status CancelledError(std::string_view msg) {
+  return {StatusCode::kCancelled, msg};
+}
+Status DeadlineExceededError(std::string_view msg) {
+  return {StatusCode::kDeadlineExceeded, msg};
+}
+Status FailedPreconditionError(std::string_view msg) {
+  return {StatusCode::kFailedPrecondition, msg};
+}
+Status InternalError(std::string_view msg) {
+  return {StatusCode::kInternal, msg};
 }
 Status InvalidArgumentError(std::string_view msg) {
   return {StatusCode::kInvalidArgument, msg};
 }
+Status NotFoundError(std::string_view msg) {
+  return {StatusCode::kNotFound, msg};
+}
+Status OutOfRangeError(std::string_view msg) {
+  return {StatusCode::kOutOfRange, msg};
+}
+Status PermissionDeniedError(std::string_view msg) {
+  return {StatusCode::kPermissionDenied, msg};
+}
+Status ResourceExhaustedError(std::string_view msg) {
+  return {StatusCode::kResourceExhausted, msg};
+}
+Status UnauthenticatedError(std::string_view msg) {
+  return {StatusCode::kUnauthenticated, msg};
+}
+Status UnavailableError(std::string_view msg) {
+  return {StatusCode::kUnavailable, msg};
+}
 Status UnimplementedError(std::string_view msg) {
   return {StatusCode::kUnimplemented, msg};
 }
-Status InternalError(std::string_view msg) {
-  return {StatusCode::kUnimplemented, msg};
+Status UnknownError(std::string_view msg) {
+  return {StatusCode::kUnknown, msg};
 }
 
 StatusBuilder UnknownErrorBuilder() {
@@ -114,15 +144,20 @@ StatusBuilder UnimplementedErrorBuilder() {
 StatusBuilder InternalErrorBuilder() {
   return {InternalError("")};
 }
+StatusBuilder FailedPreconditionErrorBuilder() {
+  return {FailedPreconditionError("")};
+}
+StatusBuilder NotFoundErrorBuilder() {
+  return {NotFoundError("")};
+}
 
 std::ostream &operator<<(std::ostream &o, const Status &s) {
   return o << s.ToString();
 }
 
-void StatusInternalOnlyDieIfNotOk(const Status &st) {
-  if (st.ok()) return;
+void StatusInternalOnlyDie(const Status &st) {
   std::cerr << st << std::endl;
-  std::exit(static_cast<int>(st.code()));
+  std::abort();
 }
 
 StatusBuilder::StatusBuilder(const Status &original)

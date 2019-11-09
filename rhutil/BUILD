@@ -55,3 +55,13 @@ cc_library(
         "@abseil//absl/strings:str_format",
     ],
 )
+
+cc_library(
+    name = "module_init",
+    visibility = ["//visibility:public"],
+    srcs = ["module_init.cc"],
+    hdrs = ["module_init.h"],
+    deps = [
+        "@abseil//absl/synchronization",
+    ],
+)
