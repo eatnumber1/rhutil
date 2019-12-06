@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 #include <string_view>
 #include <functional>
@@ -24,11 +25,6 @@ class CurlHandleDeleter {
 class CurlSListDeleter {
  public:
   void operator()(curl_slist *);
-};
-
-class CurlURLDeleter {
- public:
-  void operator()(CURLU *);
 };
 
 class CurlStrDeleter {
@@ -74,6 +70,58 @@ class ThreadSafeCurlShare {
   absl::flat_hash_map<curl_lock_data, std::unique_ptr<MutexLock>> locks_;
 };
 
+// All string_views used herein must be null-terminated.
+class CurlURL {
+ public:
+  CurlURL();
+  ~CurlURL();
+  explicit CurlURL(CURLU *url);
+
+  static CurlURL FromStringOrDie(std::string_view url);
+  static StatusOr<CurlURL> FromString(std::string_view url);
+
+  CurlURL(const CurlURL &);
+  CurlURL(CurlURL &&);
+  CurlURL &operator=(CurlURL);
+
+  friend void swap(CurlURL &, CurlURL &);
+
+  CURLU *ReleaseCURLU();
+  CURLU *GetCURLU() const;
+
+  Status SetURL(std::string_view url);
+  void SetUser(std::string_view user);
+  void SetPassword(std::string_view password);
+  void SetHost(std::string_view host);
+  void SetPort(uint16_t port);
+  void SetPath(std::string_view path);
+  void SetScheme(std::string_view scheme);
+
+  std::unique_ptr<char, CurlStrDeleter> GetURL() const;
+  std::unique_ptr<char, CurlStrDeleter> GetScheme() const;
+  std::unique_ptr<char, CurlStrDeleter> GetUser() const;
+  std::unique_ptr<char, CurlStrDeleter> GetPassword() const;
+  std::unique_ptr<char, CurlStrDeleter> GetHost() const;
+  std::unique_ptr<char, CurlStrDeleter> GetPath() const;
+  uint16_t GetPort() const;
+
+  StatusOr<std::unique_ptr<char, CurlStrDeleter>> GetAndMapErrorToNull(
+      CURLUPart part, CURLUcode nullcode, unsigned int flags = 0) const;
+
+  Status Set(CURLUPart part, std::string_view content, unsigned int flags = 0);
+  StatusOr<std::unique_ptr<char, CurlStrDeleter>> Get(
+      CURLUPart part, unsigned int flags = 0) const;
+
+  static Status CodeToStatus(CURLUcode code);
+
+ private:
+   CURLU *url_;
+};
+
+bool AbslParseFlag(absl::string_view text, CurlURL *url, std::string *error);
+
+std::string AbslUnparseFlag(CurlURL url);
+
 std::unique_ptr<CURL, CurlHandleDeleter> CurlEasyInit();
 
 template <typename... Parameters>
@@ -88,12 +136,6 @@ Status CurlShareSetopt(CURLSH *share, CURLSHoption option,
 Status CurlEasySetWriteCallback(
     CURL *handle, std::function<Status(std::string_view, size_t*)> callback);
 
-// content must be null-terminated
-Status CurlURLSet(CURLU *url, CURLUPart part, std::string_view content,
-                  unsigned int flags = 0);
-StatusOr<std::unique_ptr<char, CurlStrDeleter>> CurlURLGet(
-    CURLU *url, CURLUPart part, unsigned int flags = 0);
-
 // The passed-in string_views must be null-terminated.
 std::unique_ptr<curl_slist, CurlSListDeleter> NewCurlSList(
     absl::Span<const std::string_view> strings);
@@ -105,7 +147,6 @@ Status CurlGlobalInit();
 
 Status CurlCodeToStatus(CURLcode code);
 Status CurlCodeToStatus(CURLcode code, CURL *handle);
-Status CurlURLCodeToStatus(CURLUcode code);
 Status CurlShareCodeToStatus(CURLSHcode code);
 
 Status HTTPCodeToStatus(int http_code);

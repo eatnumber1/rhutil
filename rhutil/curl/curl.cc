@@ -7,9 +7,22 @@
 #include <string_view>
 
 #include "rhutil/errno.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/numbers.h"
 
 namespace rhutil {
 namespace {
+
+void CheckNullTerm(std::string_view sv) {
+  CHECK(sv.data()[sv.size()] == '\0');
+}
+
+CURLU *CurlURLDupUnlessNull(CURLU *url) {
+  if (url == nullptr) return nullptr;
+  CURLU *ret = curl_url_dup(url);
+  CHECK(ret);
+  return ret;
+}
 
 struct CurlHandlePrivate {
   std::function<Status(std::string_view, size_t*)> write_callback;
@@ -90,16 +103,134 @@ void CurlSListDeleter::operator()(curl_slist *list) {
   curl_slist_free_all(list);
 }
 
-void CurlURLDeleter::operator()(CURLU *url) {
-  curl_url_cleanup(url);
-}
-
 void CurlStrDeleter::operator()(char *ptr) {
   curl_free(ptr);
 }
 
 void CurlShareDeleter::operator()(CURLSH *share) {
   CHECK_OK(CurlShareCodeToStatus(curl_share_cleanup(share)));
+}
+
+CurlURL::CurlURL(CURLU *url) : url_(url) {}
+
+CurlURL::CurlURL() : CurlURL(curl_url()) {}
+CurlURL::CurlURL(const CurlURL &u) : CurlURL(CurlURLDupUnlessNull(u.url_)) {}
+CurlURL::CurlURL(CurlURL &&u) : CurlURL(nullptr) { swap(*this, u); }
+
+CurlURL &CurlURL::operator=(CurlURL u) {
+  swap(*this, u);
+  return *this;
+}
+
+CurlURL::~CurlURL() {
+  if (url_ == nullptr) return;
+  curl_url_cleanup(url_);
+}
+
+void swap(CurlURL &a, CurlURL &b) {
+  using std::swap;
+  swap(a.url_, b.url_);
+}
+
+StatusOr<CurlURL> CurlURL::FromString(std::string_view url) {
+  CurlURL ret;
+  RETURN_IF_ERROR(ret.SetURL(url));
+  return ret;
+}
+
+CurlURL CurlURL::FromStringOrDie(std::string_view url) {
+  auto url_or = CurlURL::FromString(url);
+  CHECK_OK(url_or.status());
+  return std::move(url_or).ValueOrDie();
+}
+
+CURLU *CurlURL::ReleaseCURLU() {
+  auto *url = url_;
+  url_ = nullptr;
+  return url;
+}
+
+CURLU *CurlURL::GetCURLU() const { return url_; }
+
+Status CurlURL::SetURL(std::string_view url) {
+  CheckNullTerm(url);
+  return Set(CURLUPART_URL, url.data(), CURLU_URLENCODE);
+}
+void CurlURL::SetUser(std::string_view user) {
+  CheckNullTerm(user);
+  CHECK_OK(Set(CURLUPART_USER, user.data(), CURLU_URLENCODE));
+}
+void CurlURL::SetPassword(std::string_view password) {
+  CheckNullTerm(password);
+  CHECK_OK(Set(CURLUPART_PASSWORD, password.data(), CURLU_URLENCODE));
+}
+void CurlURL::SetHost(std::string_view host) {
+  CheckNullTerm(host);
+  CHECK_OK(Set(CURLUPART_HOST, host.data(), CURLU_URLENCODE));
+}
+void CurlURL::SetPort(uint16_t port) {
+  CHECK_OK(Set(CURLUPART_PORT, absl::StrCat(port).c_str(), CURLU_URLENCODE));
+}
+void CurlURL::SetPath(std::string_view path) {
+  CheckNullTerm(path);
+  CHECK_OK(Set(CURLUPART_PATH, path.data(), CURLU_URLENCODE));
+}
+void CurlURL::SetScheme(std::string_view scheme) {
+  CheckNullTerm(scheme);
+  CHECK_OK(Set(CURLUPART_SCHEME, scheme.data(), CURLU_URLENCODE));
+}
+
+std::unique_ptr<char, CurlStrDeleter> CurlURL::GetURL() const {
+  return Get(CURLUPART_URL).ValueOrDie();
+}
+std::unique_ptr<char, CurlStrDeleter> CurlURL::GetScheme() const {
+  return Get(CURLUPART_SCHEME, CURLU_DEFAULT_SCHEME).ValueOrDie();
+}
+std::unique_ptr<char, CurlStrDeleter> CurlURL::GetUser() const {
+  return GetAndMapErrorToNull(CURLUPART_USER, CURLUE_NO_USER,
+                              CURLU_URLDECODE).ValueOrDie();
+}
+std::unique_ptr<char, CurlStrDeleter> CurlURL::GetPassword() const {
+  return GetAndMapErrorToNull(CURLUPART_PASSWORD, CURLUE_NO_PASSWORD,
+                              CURLU_URLDECODE).ValueOrDie();
+}
+std::unique_ptr<char, CurlStrDeleter> CurlURL::GetHost() const {
+  return GetAndMapErrorToNull(CURLUPART_HOST, CURLUE_NO_HOST,
+                              CURLU_URLDECODE).ValueOrDie();
+}
+uint16_t CurlURL::GetPort() const {
+  auto str = Get(CURLUPART_PORT, CURLU_DEFAULT_PORT).ValueOrDie();
+  uint32_t ret;  // SimpleAtoi doesn't work with 16-bit numbers.
+  CHECK(absl::SimpleAtoi(str.get(), &ret));
+  return ret;
+}
+std::unique_ptr<char, CurlStrDeleter> CurlURL::GetPath() const {
+  return Get(CURLUPART_PATH, CURLU_URLDECODE).ValueOrDie();
+}
+
+Status CurlURL::Set(CURLUPart part, std::string_view content,
+                    unsigned int flags) {
+  CURLUcode code = curl_url_set(url_, part, content.data(), flags);
+  return StatusBuilder(CodeToStatus(code))
+      << "Failed to set URL to '" << content << "'";
+}
+
+StatusOr<std::unique_ptr<char, CurlStrDeleter>> CurlURL::GetAndMapErrorToNull(
+    CURLUPart part, CURLUcode nullcode, unsigned int flags) const {
+  if (nullcode == 0) return InvalidArgumentError("nullcode must not be 0");
+  char *val = nullptr;
+  CURLUcode code = curl_url_get(url_, part, &val, flags);
+  if (code == nullcode) return {nullptr};
+  RETURN_IF_ERROR(CodeToStatus(code));
+  return std::unique_ptr<char, CurlStrDeleter>(val);
+}
+
+StatusOr<std::unique_ptr<char, CurlStrDeleter>> CurlURL::Get(
+    CURLUPart part, unsigned int flags) const {
+  char *val = nullptr;
+  CURLUcode code = curl_url_get(url_, part, &val, flags);
+  RETURN_IF_ERROR(CodeToStatus(code));
+  return std::unique_ptr<char, CurlStrDeleter>(val);
 }
 
 std::unique_ptr<curl_slist, CurlSListDeleter> NewCurlSList(
@@ -212,20 +343,6 @@ Status CurlEasySetWriteCallback(
   return OkStatus();
 }
 
-Status CurlURLSet(CURLU *url, CURLUPart part, std::string_view content,
-                  unsigned int flags) {
-  CURLUcode code = curl_url_set(url, part, content.data(), flags);
-  return CurlURLCodeToStatus(code);
-}
-
-StatusOr<std::unique_ptr<char, CurlStrDeleter>> CurlURLGet(
-    CURLU *url, CURLUPart part, unsigned int flags) {
-  char *val = nullptr;
-  CURLUcode code = curl_url_get(url, part, &val, flags);
-  RETURN_IF_ERROR(CurlURLCodeToStatus(code));
-  return std::unique_ptr<char, CurlStrDeleter>(val);
-}
-
 std::unique_ptr<CURL, CurlHandleDeleter> CurlEasyInit() {
   std::unique_ptr<CURL, CurlHandleDeleter> handle(curl_easy_init());
   CHECK(handle);
@@ -246,6 +363,9 @@ Status CurlCodeToStatus(CURLcode code) {
     case CURLE_FAILED_INIT:
       sc = StatusCode::kInternal;
       break;
+    case CURLE_COULDNT_CONNECT:
+      sc = StatusCode::kFailedPrecondition;
+      break;
     default:
       break;
   }
@@ -257,9 +377,9 @@ Status CurlCodeToStatus(CURLcode code, CURL *handle) {
       << GetPrivate(handle)->error_buffer;
 }
 
-Status CurlURLCodeToStatus(CURLUcode code) {
+Status CurlURL::CodeToStatus(CURLUcode code) {
   if (code == CURLUE_OK) return OkStatus();
-  std::string_view msg = "unknown URL error";
+  std::string msg;
   StatusCode sc = StatusCode::kUnknown;
   // There is no curl_url_strerror, so we have to do this ourselves.
   // https://curl.haxx.se/mail/lib-2018-10/0112.html
@@ -267,18 +387,30 @@ Status CurlURLCodeToStatus(CURLUcode code) {
   // https://curl.haxx.se/libcurl/c/libcurl-errors.html
   switch (code) {
     case CURLUE_BAD_HANDLE:
-      msg = "An argument that should be a CURLU pointer was passed in as a NULL.";
+      msg = "An argument that should be a CURLU pointer was passed in as a NULL";
       sc = StatusCode::kInternal;
       break;
     case CURLUE_BAD_PARTPOINTER:
-      msg = "A NULL pointer was passed to the 'part' argument of curl_url_get.";
+      msg = "A NULL pointer was passed to the 'part' argument of curl_url_get";
       sc = StatusCode::kInternal;
       break;
+    case CURLUE_NO_USER:
+      msg = "There is no user part in the URL";
+      sc = StatusCode::kFailedPrecondition;
+      break;
+    case CURLUE_MALFORMED_INPUT:
+      msg = "A malformed input was passed to a URL API function.";
+      sc = StatusCode::kInvalidArgument;
+      break;
+    case CURLUE_NO_HOST:
+      msg = "There is no host part in the URL.";
+      sc = StatusCode::kFailedPrecondition;
     // there are more, but I got lazy
     default:
+      msg = absl::StrCat("unknown URL error ", code);
       break;
   }
-  return {sc, msg};
+  return {sc, std::move(msg)};
 }
 
 Status CurlShareCodeToStatus(CURLSHcode code) {
@@ -353,6 +485,21 @@ Status CurlGlobalInit() {
   static auto *status =
       new Status(CurlCodeToStatus(curl_global_init(CURL_GLOBAL_ALL)));
   return *status;
+}
+
+bool AbslParseFlag(absl::string_view text, CurlURL *url, std::string *error) {
+  auto st = url->SetURL(text);
+  if (!st.ok()) {
+    *error = st.ToString();
+    return false;
+  }
+  return true;
+}
+
+std::string AbslUnparseFlag(CurlURL url) {
+  auto url_str_or = url.Get(CURLUPART_URL);
+  if (!url_str_or.ok()) return "";
+  return {std::move(url_str_or).ValueOrDie().get()};
 }
 
 }  // namespace rhutil

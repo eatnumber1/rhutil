@@ -5,14 +5,20 @@ filegroup(
     srcs = glob(["**"]),
 )
 
+config_setting(
+    name = "macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
 cmake_external(
     name = "yajl",
     lib_source = ":all",
     visibility = ["//visibility:public"],
     static_libraries = ["libyajl_s.a"],
     shared_libraries = select({
-        "@bazel_tools//src/conditions:windows": ["libyajl.2.dll"],
-        "@bazel_tools//src/conditions:darwin": ["libyajl.2.dylib"],
-        "//conditions:default": ["libyajl.2.so"],
+        ":macos": ["libyajl.dylib"],
+        "//conditions:default": ["libyajl.so"],
     }),
 )

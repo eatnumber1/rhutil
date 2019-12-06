@@ -12,6 +12,7 @@ Status ErrnoAsStatus() {
 }
 
 Status ErrnoAsStatus(int err) {
+  if (err == 0) return OkStatus();
   auto code = StatusCode::kUnknown;
   switch (err) {
     case ENOENT:
@@ -24,6 +25,21 @@ Status ErrnoAsStatus(int err) {
       break;
   }
   return {code, std::strerror(err)};
+}
+
+Status ErrorCodeAsStatus(std::error_code code) {
+  if (!code) return OkStatus();
+  const std::error_category &cat = code.category();
+  if (cat == std::generic_category()) {
+    return ErrnoAsStatus(code.value());
+  }
+  return StatusBuilder({StatusCode::kUnknown, ""})
+      << code << ": " << code.message();
+}
+
+Status ProcessExitCodeToStatus(int code) {
+  if (code == 0) return OkStatus();
+  return UnknownErrorBuilder() << "code " << code;
 }
 
 }  // namespace rhutil

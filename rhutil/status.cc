@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <iostream>
+#include <boost/stacktrace.hpp>
 
 #include "absl/strings/str_format.h"
 
@@ -151,12 +152,17 @@ StatusBuilder NotFoundErrorBuilder() {
   return {NotFoundError("")};
 }
 
+bool IsFailedPrecondition(const Status &st) {
+  return st.code() == StatusCode::kFailedPrecondition;
+}
+
 std::ostream &operator<<(std::ostream &o, const Status &s) {
   return o << s.ToString();
 }
 
 void StatusInternalOnlyDie(const Status &st) {
   std::cerr << st << std::endl;
+  std::cerr << boost::stacktrace::stacktrace() << std::endl;
   std::abort();
 }
 

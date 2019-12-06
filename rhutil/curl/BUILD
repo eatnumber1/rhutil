@@ -11,6 +11,7 @@ cc_library(
         "@abseil//absl/types:span",
         "@abseil//absl/synchronization",
         "@abseil//absl/container:flat_hash_map",
+        "@abseil//absl/strings",
         "@curl//:curl",
     ],
 )

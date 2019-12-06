@@ -24,6 +24,7 @@ def rhutil_deps():
         remote = "https://github.com/google/googletest.git",
         commit = "90a443f9c2437ca8a682a1ac625eba64e1d74a8a",
         shallow_since = "1565193450 -0400",
+        repo_mapping = {"@com_google_absl": "@abseil"}
     )
 
   if not native.existing_rule("abseil"):
@@ -49,4 +50,28 @@ def rhutil_deps():
         commit = "7f9017dd3c60047d6fbc0f617d757c763af8867e",
         remote = "https://boringssl.googlesource.com/boringssl",
         shallow_since = "1542843106 +0000",
+    )
+
+  if not native.existing_rule("com_github_nelhage_rules_boost"):
+    git_repository(
+        name = "com_github_nelhage_rules_boost",
+        commit = "13a7a40214bf62b6c5e44aa376db18c6315e67b2",
+        remote = "https://github.com/nelhage/rules_boost",
+        shallow_since = "1572449693 -0700",
+    )
+
+  if not native.existing_rule("platforms"):
+    git_repository(
+        name = "platforms",
+        remote = "https://github.com/bazelbuild/platforms.git",
+        commit = "46993efdd33b73649796c5fc5c9efb193ae19d51",
+        shallow_since = "1573219050 -0800",
+    )
+
+  if not native.existing_rule("rules_foreign_cc"):
+    git_repository(
+        name = "rules_foreign_cc",
+        remote = "https://github.com/bazelbuild/rules_foreign_cc.git",
+        commit = "6bb0536452eaca3bad20c21ba6e7968d2eda004d",
+        shallow_since = "1571839594 +0200",
     )

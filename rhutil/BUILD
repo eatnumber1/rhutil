@@ -21,6 +21,7 @@ cc_library(
         "@abseil//absl/strings:str_format",
         "@abseil//absl/strings",
         "@abseil//absl/base:core_headers",
+        "@boost//:stacktrace",
     ],
 )
 

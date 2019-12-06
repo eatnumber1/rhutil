@@ -14,9 +14,11 @@
   if (::rhutil::Status s = (expr); !s.ok()) return ::rhutil::StatusBuilder(s)
 
 #define CHECK_OK(expr) \
-    if (auto s = (expr); s.ok()) {} else { StatusInternalOnlyDie(s); }
+    do { if (auto s = (expr); !s.ok()) StatusInternalOnlyDie(s); } while (false)
 #define CHECK(expr) \
-    if (expr) {} else { StatusInternalOnlyDie(::rhutil::InternalError(#expr)); }
+    do { \
+      if (!(expr)) StatusInternalOnlyDie(::rhutil::InternalError(#expr)); \
+    } while (false)
 
 #define ASSIGN_OR_RETURN(decl, expr) \
   decl = ({ \
@@ -135,6 +137,8 @@ StatusBuilder UnimplementedErrorBuilder();
 StatusBuilder InternalErrorBuilder();
 StatusBuilder FailedPreconditionErrorBuilder();
 StatusBuilder NotFoundErrorBuilder();
+
+bool IsFailedPrecondition(const Status &st);
 
 // implementation details below
 
