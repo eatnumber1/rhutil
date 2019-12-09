@@ -17,8 +17,8 @@ cmake_external(
     lib_source = ":all",
     visibility = ["//visibility:public"],
     static_libraries = ["libyajl_s.a"],
-    shared_libraries = select({
-        ":macos": ["libyajl.2.dylib"],
-        "//conditions:default": ["libyajl.so"],
-    }),
+    #shared_libraries = select({
+    #    ":macos": ["libyajl.dylib"],
+    #    "//conditions:default": ["libyajl.so"],
+    #}),
 )

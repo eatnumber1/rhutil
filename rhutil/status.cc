@@ -155,6 +155,9 @@ StatusBuilder NotFoundErrorBuilder() {
 bool IsFailedPrecondition(const Status &st) {
   return st.code() == StatusCode::kFailedPrecondition;
 }
+bool IsNotFound(const Status &st) {
+  return st.code() == StatusCode::kNotFound;
+}
 
 std::ostream &operator<<(std::ostream &o, const Status &s) {
   return o << s.ToString();

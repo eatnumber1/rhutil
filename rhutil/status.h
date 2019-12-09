@@ -139,6 +139,7 @@ StatusBuilder FailedPreconditionErrorBuilder();
 StatusBuilder NotFoundErrorBuilder();
 
 bool IsFailedPrecondition(const Status &st);
+bool IsNotFound(const Status &st);
 
 // implementation details below
 
